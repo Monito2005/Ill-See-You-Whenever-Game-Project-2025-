@@ -2,9 +2,10 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.util.jar.JarEntry;
-
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 
 public class GamePannel extends JPanel implements Runnable{
     // decide screen settings and set variables
@@ -16,8 +17,11 @@ public class GamePannel extends JPanel implements Runnable{
     final int maxscreenrow = 12;
     final int screenWidth = tileSize * maxscreencol;
     final int screenheight = tileSize * maxscreenrow;
-
     Thread gameThread;
+
+    // offscreen buffer to keep a fixed logical resolution
+    private BufferedImage screenImage;
+    private boolean fullscreen = false;
 
     // player position and movement flags
     public int playerX;
@@ -40,6 +44,9 @@ public class GamePannel extends JPanel implements Runnable{
         // initial player position
         playerX = tileSize * 2;
         playerY = tileSize * 2;
+
+        // create offscreen image at logical resolution
+        screenImage = new BufferedImage(screenWidth, screenheight, BufferedImage.TYPE_INT_ARGB);
 
         // attach key handler
         this.addKeyListener(new KeyHandler(this));
@@ -97,11 +104,67 @@ public class GamePannel extends JPanel implements Runnable{
 
         Graphics2D g2 = (Graphics2D)g;
 
-    g2.setColor(Color.white);
+        // draw everything to the offscreen logical-resolution image first
+        Graphics2D off = screenImage.createGraphics();
+        // ensure clean background
+        off.setColor(getBackground());
+        off.fillRect(0, 0, screenImage.getWidth(), screenImage.getHeight());
 
-    // draw player rectangle at playerX/playerY
-    g2.fillRect(playerX, playerY, tileSize, tileSize);
+        // draw game scene onto offscreen image
+        off.setColor(Color.white);
+        off.fillRect(playerX, playerY, tileSize, tileSize);
+        off.dispose();
+
+        // draw the offscreen image scaled to the current component size
+        // use integer scaling (nearest neighbor) to avoid stretching and preserve pixel art
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+
+        int panelW = getWidth();
+        int panelH = getHeight();
+
+        // compute integer scale factor (>=1) that fits the logical resolution into the panel
+        int scaleX = panelW / screenImage.getWidth();
+        int scaleY = panelH / screenImage.getHeight();
+        int intScale = Math.max(1, Math.min(scaleX, scaleY));
+
+        int drawW = screenImage.getWidth() * intScale;
+        int drawH = screenImage.getHeight() * intScale;
+
+        // center (letterbox) when the panel size doesn't match exact integer multiple
+        int drawX = (panelW - drawW) / 2;
+        int drawY = (panelH - drawH) / 2;
+
+        g2.drawImage(screenImage, drawX, drawY, drawW, drawH, null);
 
         g2.dispose();
+    }
+
+    // Toggle fullscreen by disposing and changing undecorated + extended state on the parent frame
+    public void toggleFullscreen(){
+        java.awt.Window w = SwingUtilities.getWindowAncestor(this);
+        if(!(w instanceof javax.swing.JFrame)) return;
+        javax.swing.JFrame frame = (javax.swing.JFrame) w;
+
+        // flip state
+        fullscreen = !fullscreen;
+
+        // Changing undecorated requires disposing the frame
+        frame.dispose();
+
+        if(fullscreen){
+            frame.setUndecorated(true);
+            frame.setExtendedState(javax.swing.JFrame.MAXIMIZED_BOTH);
+        }else{
+            frame.setUndecorated(false);
+            frame.setExtendedState(javax.swing.JFrame.NORMAL);
+            // restore size to logical size (scaled by nothing) -> pack will use preferred size
+            frame.pack();
+            frame.setLocationRelativeTo(null);
+        }
+
+        frame.setVisible(true);
+        // after re-showing, ensure this panel has focus for key input
+        this.requestFocusInWindow();
     }
 }

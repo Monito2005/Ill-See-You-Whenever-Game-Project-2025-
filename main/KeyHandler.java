@@ -29,6 +29,9 @@ public class KeyHandler implements KeyListener{
         if(code == KeyEvent.VK_S) gp.down = true;
         if(code == KeyEvent.VK_A) gp.left = true;
         if(code == KeyEvent.VK_D) gp.right = true;
+
+        // Fullscreen toggle (F11)
+        if(code == KeyEvent.VK_F11) gp.toggleFullscreen();
     }
 
     @Override
