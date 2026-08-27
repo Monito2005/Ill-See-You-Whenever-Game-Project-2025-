@@ -19,6 +19,11 @@ public class Player extends entity {
     // Optional extra frames (unused here but kept for compatibility)
     private BufferedImage down3, left3, right3, up3;
 
+    private static final int WALK_FRAME_DELAY = 16;
+    private static final int SPRINT_FRAME_DELAY = 10;
+    private static final int BASE_SPEED = 1;
+    private static final int SPRINT_SPEED = 2;
+
     // Overload that uses gp.keyH if available
     public Player(GamePanel gp){
         this(gp, gp != null ? gp.keyH : null);
@@ -28,7 +33,7 @@ public class Player extends entity {
         super(gp);
         this.gp = gp;
         this.keyH = keyH;
-        this.speed = 1; // slower movement
+        this.speed = BASE_SPEED;
         this.screenX = gp.screenWidth / 2 - gp.tileSize / 2;
         this.screenY = gp.screenHeight / 2 - gp.tileSize / 2;
         this.solidArea = new Rectangle(8, 16, 32, 32);
@@ -39,7 +44,7 @@ public class Player extends entity {
     private void setDefaultValues() {
         worldx = gp.tileSize * 23;
         worldy = gp.tileSize * 21;
-        speed = 1;           // keep slow
+        speed = BASE_SPEED;
         direction = "down";
     }
 
@@ -107,32 +112,32 @@ public class Player extends entity {
         }
 
         if(dx != 0 || dy != 0){
-            double len = Math.sqrt(dx*dx + dy*dy);
-            double nx = dx / len, ny = dy / len;
-            int vx = (int)Math.round(nx * speed);
-            int vy = (int)Math.round(ny * speed);
+            int moveSpeed = (kh != null && kh.shiftPressed) ? SPRINT_SPEED : BASE_SPEED;
+            int vx = dx * moveSpeed;
+            int vy = dy * moveSpeed;
 
-            // Check X movement
+            // Reset collision before each move so wall checks are consistent.
+            collisionOn = false;
+
             if(vx != 0){
                 worldx += vx;
-                collisionOn = false;
                 gp.cChecker.checkTile(this);
-                if(collisionOn) worldx -= vx; // revert if collision
+                if(collisionOn) worldx -= vx;
             }
 
-            // Check Y movement
             if(vy != 0){
                 worldy += vy;
                 collisionOn = false;
                 gp.cChecker.checkTile(this);
-                if(collisionOn) worldy -= vy; // revert if collision
+                if(collisionOn) worldy -= vy;
             }
 
             if(Math.abs(dx) >= Math.abs(dy)) direction = dx > 0 ? "right" : "left";
             else direction = dy > 0 ? "down" : "up";
 
             spriteCounter++;
-            if(spriteCounter > 20){
+            int frameDelay = (kh != null && kh.shiftPressed) ? SPRINT_FRAME_DELAY : WALK_FRAME_DELAY;
+            if(spriteCounter > frameDelay){
                 spriteNum = (spriteNum == 1) ? 2 : 1;
                 spriteCounter = 0;
             }
