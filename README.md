@@ -73,6 +73,6 @@ This is an active personal game project. The core exploration, dialogue, relatio
 
 ## Credits
 
-This project was developed worked on by Gustavo Castillo
-Music Produced By Gustavo Castillo & Marco Telles (Ziday)
-Zidays Links: https://ziday.newgrounds.com , https://soundcloud.com/ziday
+- This project was developed worked on by Gustavo Castillo
+- Music Produced By Gustavo Castillo & Marco Telles (Ziday)
+- Zidays Links: https://ziday.newgrounds.com , https://soundcloud.com/ziday
