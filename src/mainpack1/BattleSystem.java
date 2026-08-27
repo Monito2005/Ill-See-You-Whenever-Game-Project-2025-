@@ -1,18 +1,19 @@
 package mainpack1;
 
-import entity.NPC;
-import entity.npcstudent1;
-import entity.entity;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
-import java.util.HashSet;
-import java.util.Set;
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.InputStream;
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.imageio.ImageIO;
+
+import entity.NPC;
+import entity.entity;
 
 public class BattleSystem {
 
@@ -27,6 +28,8 @@ public class BattleSystem {
     private int playerHP = 100;
     private int npcHP = 100;
     private int maxHP = 100;
+    private int combo = 0;
+    private boolean guarding = false;
 
     private String battleLog = "";
     private int actionCount = 0;
@@ -147,9 +150,9 @@ public class BattleSystem {
 
     // Pacing controls to target ~20–30 minutes total play
     private int totalTurns = 0;
-    private final int intermissionEvery = 4;   // story beat after every 4 turns
+    private final int intermissionEvery = 6;   // story beat after every 6 turns
     private boolean inIntermission = false;
-    private final float damagePacingFactor = 0.65f; // slow down progress by reducing action damage
+    private final float damagePacingFactor = 1.15f;
 
     public BattleSystem(GamePanel gp){
         this.gp = gp;
@@ -325,6 +328,8 @@ public class BattleSystem {
         npcHP = maxHP;
         battleLog = "Battle start!";
         actionCount = 0;
+        combo = 0;
+        guarding = false;
         // Ensure previous branching resets
         roundIndex = 0;
         preIndex = 0;
@@ -528,11 +533,22 @@ public class BattleSystem {
         Action a = currentActions[actionIndex];
         battleLog = "You: " + a.text;
 
-        // Apply pacing factor to slow progress
-        int pacedDamage = Math.max(0, Math.round(a.damage * damagePacingFactor));
+        boolean listening = selected == 1;
+        int pacedDamage = Math.max(0, Math.round(a.damage * damagePacingFactor * (listening ? 0.85f : 1.0f)));
+        boolean critical = pacedDamage > 0 && (++combo % 3 == 0);
+        if(critical){
+            pacedDamage = Math.round(pacedDamage * 1.75f);
+        }else if(pacedDamage <= 0){
+            combo = 0;
+        }
         npcHP -= pacedDamage;
         if(npcHP < 0) npcHP = 0;
         affinity += a.affinityDelta;
+
+        guarding = listening;
+        if(listening){
+            playerHP = Math.min(maxHP, playerHP + 6);
+        }
 
         // NPC reaction line right after player selects
         // Shown in phase 3 with contextual follow-up
@@ -553,18 +569,18 @@ public class BattleSystem {
         // Trigger shakes
         npcShakeFrames = 10;
 
-        // NPC deals paced damage (smaller per turn to lengthen)
-        int baseNpcDamage = 3 + (int)(Math.random()*7);
-        int pacedNpcDamage = Math.max(1, Math.round(baseNpcDamage * damagePacingFactor));
+        int baseNpcDamage = 5 + (int)(Math.random()*8);
+        int pacedNpcDamage = Math.max(1, Math.round(baseNpcDamage * (guarding ? 0.4f : 1.0f)));
         playerHP -= pacedNpcDamage;
         if(playerHP < 0) playerHP = 0;
         if(pacedNpcDamage > 0) uiShakeFrames = 10;
 
-        // Compose battleLog with pacing note removed (kept same)
-        String safeName = (currentNPC != null && currentNPC.name != null) ? currentNPC.name : "NPC";
-        battleLog = "You: " + a.text + "   " + a.npcReaction + "  " + 
+        String impact = critical ? " CRITICAL!" : "";
+        String defense = listening ? " You recover 6 resolve and brace for the reply." : "";
+        battleLog = "You: " + a.text + " [" + pacedDamage + " impact" + impact + "] " + a.npcReaction + " " +
                     (a.followUpPrompt != null ? a.followUpPrompt :
-                        (roundIndex < npcQuestions.length ? npcQuestions[roundIndex] : "He watches you carefully."));
+                        (roundIndex < npcQuestions.length ? npcQuestions[roundIndex] : "He watches you carefully.")) +
+                    " They deal " + pacedNpcDamage + " resolve." + defense;
 
         // Turn count and intermission scheduling
         totalTurns++;
@@ -688,6 +704,16 @@ public class BattleSystem {
                 ? currentNPC.name.toUpperCase()
                 : "NPC";
         drawRollingHP(g2, gp.screenWidth - barW - 40 + uiShakeX, 160 + uiShakeY, barW, barH, displayNpcHP, maxHP, npcLabel);
+
+        g2.setFont(new Font("Arial", Font.BOLD, 13));
+        g2.setColor(EB_SELECT);
+        if(combo > 0){
+            g2.drawString("COMBO x" + combo + (combo % 3 == 2 ? "  (next hit crits)" : ""), 40, 218);
+        }
+        if(guarding){
+            g2.setColor(new Color(150, 220, 255));
+            g2.drawString("BRACED: reduced damage", gp.screenWidth - 210, 218);
+        }
 
         // Battle log panel (smaller font + wrapped text)
         int logBoxW = gp.screenWidth - 60;
