@@ -74,5 +74,6 @@ This is an active personal game project. The core exploration, dialogue, relatio
 ## Credits
 
 - This project was developed worked on by Gustavo Castillo
+- Artwork and Spritework done by Gustavo Castillo, Spritework Inspired By Nintendo Pokemon Fire Red.
 - Music Produced By Gustavo Castillo & Marco Telles (Ziday)
 - Zidays Links: https://ziday.newgrounds.com , https://soundcloud.com/ziday
