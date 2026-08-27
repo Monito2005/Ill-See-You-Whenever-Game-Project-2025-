@@ -29,9 +29,11 @@ public class MainMenu {
 
     public void move(int delta){
         selection = (selection + delta + items.length) % items.length;
+        gp.se.playTone(360, 45, 0.18f);
     }
 
     public void confirm(){
+        gp.se.playTone(640, 90, 0.24f);
         if(selection == 0){
             // Trigger BOOM burst; update() will switch to PLAY after burst
             boomTriggered = true;

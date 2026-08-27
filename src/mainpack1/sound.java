@@ -2,6 +2,7 @@ package mainpack1;
 
 import java.net.URL;
 
+import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
@@ -82,6 +83,31 @@ public class sound {
             clip.start();
         }
     }
+
+    public void playTone(double frequency, int durationMs, float volume){
+        try{
+            int sampleRate = 44100;
+            int sampleCount = Math.max(1, sampleRate * durationMs / 1000);
+            byte[] samples = new byte[sampleCount];
+            for(int i = 0; i < sampleCount; i++){
+                double progress = i / (double)sampleCount;
+                double envelope = Math.min(1.0, Math.min(progress * 20.0, (1.0 - progress) * 20.0));
+                samples[i] = (byte)(Math.sin(2.0 * Math.PI * frequency * i / sampleRate)
+                        * 127.0 * envelope);
+            }
+
+            if(clip != null){
+                clip.stop();
+                clip.close();
+            }
+            AudioFormat format = new AudioFormat(sampleRate, 8, 1, true, false);
+            clip = AudioSystem.getClip();
+            clip.open(format, samples, 0, samples.length);
+            setVolume(volume);
+            clip.start();
+        }catch(Exception ignored){}
+    }
+
     public void playLoop(){
         try{
             if(clip != null){

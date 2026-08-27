@@ -159,6 +159,10 @@ public class BattleSystem {
         initActions();
     }
 
+    private void playTone(double frequency, int durationMs, float volume){
+        if(gp.se != null) gp.se.playTone(frequency, durationMs, volume);
+    }
+
     private void initActions(){
         // Humberto base options (empathetic)
         actions = new Action[]{
@@ -409,6 +413,7 @@ public class BattleSystem {
         // Pre-battle conversation
         if(phase==-1){
             if(c==KeyEvent.VK_O || c==KeyEvent.VK_ENTER){
+                playTone(520, 65, 0.16f);
                 // advance dialogue or move to choice
                 if(preIndex < preDialogue.length-1){
                     preIndex++;
@@ -417,10 +422,12 @@ public class BattleSystem {
                     phase = 0; // go to intro title
                 }
             }else if(c==KeyEvent.VK_W || c==KeyEvent.VK_UP){
+                playTone(350, 45, 0.14f);
                 // respond: positive affinity
                 affinity += 2;
                 phase = 0;
             }else if(c==KeyEvent.VK_S || c==KeyEvent.VK_DOWN){
+                playTone(350, 45, 0.14f);
                 // stay silent: negative affinity
                 affinity -= 1;
                 phase = 0;
@@ -438,9 +445,10 @@ public class BattleSystem {
 
         if(phase==1){
             // clamp selection between 0 and 1
-            if(c==KeyEvent.VK_W || c==KeyEvent.VK_UP) selected = 0;
-            else if(c==KeyEvent.VK_S || c==KeyEvent.VK_DOWN) selected = 1;
+            if(c==KeyEvent.VK_W || c==KeyEvent.VK_UP){ selected = 0; playTone(350, 45, 0.14f); }
+            else if(c==KeyEvent.VK_S || c==KeyEvent.VK_DOWN){ selected = 1; playTone(350, 45, 0.14f); }
             else if(c==KeyEvent.VK_O || c==KeyEvent.VK_ENTER){
+                playTone(640, 80, 0.2f);
                 phase = 2;
                 actionIndex = 0; // reset cursor for action list
             }
@@ -455,9 +463,12 @@ public class BattleSystem {
             }
             if(c==KeyEvent.VK_W || c==KeyEvent.VK_UP){
                 actionIndex = (actionIndex - 1 + currentActions.length) % currentActions.length;
+                playTone(350, 45, 0.14f);
             }else if(c==KeyEvent.VK_S || c==KeyEvent.VK_DOWN){
                 actionIndex = (actionIndex + 1) % currentActions.length;
+                playTone(350, 45, 0.14f);
             }else if(c==KeyEvent.VK_O || c==KeyEvent.VK_ENTER){
+                playTone(640, 80, 0.2f);
                 performAction();
                 phase = 3;
             }
@@ -466,6 +477,7 @@ public class BattleSystem {
 
         if(phase==3){
             if(c==KeyEvent.VK_O || c==KeyEvent.VK_ENTER){
+                playTone(520, 65, 0.16f);
                 phase = 4;
                 // prepare next menu: ensure cursor in bounds
                 if(currentActions == null || currentActions.length == 0){
@@ -478,6 +490,7 @@ public class BattleSystem {
 
         if(phase==4){
             if(c==KeyEvent.VK_O || c==KeyEvent.VK_ENTER){
+                playTone(640, 80, 0.2f);
                 // Continue until someone reaches 0 HP (no turn-count limit)
                 if(playerHP <= 0){
                     // Defeat: mark blocked and end immediately
@@ -500,6 +513,7 @@ public class BattleSystem {
 
         if(phase==5){
             if(c==KeyEvent.VK_O || c==KeyEvent.VK_ENTER){
+                playTone(760, 120, 0.24f);
                 // Go to detailed Win Screen
                 phase = 6;
             }
@@ -508,6 +522,7 @@ public class BattleSystem {
 
         if(phase==6){
             if(c==KeyEvent.VK_O || c==KeyEvent.VK_ENTER){
+                playTone(420, 80, 0.18f);
                 end();
             }
             return;
@@ -516,6 +531,7 @@ public class BattleSystem {
         // New intermission phase: short beat to slow pacing
         if(phase==7){
             if(c==KeyEvent.VK_O || c==KeyEvent.VK_ENTER){
+                playTone(520, 65, 0.16f);
                 inIntermission = false;
                 // Return to results flow to check win/continue
                 phase = 4;
@@ -538,6 +554,9 @@ public class BattleSystem {
         boolean critical = pacedDamage > 0 && (++combo % 3 == 0);
         if(critical){
             pacedDamage = Math.round(pacedDamage * 1.75f);
+            playTone(920, 150, 0.28f);
+        }else if(pacedDamage > 0){
+            playTone(680, 70, 0.2f);
         }else if(pacedDamage <= 0){
             combo = 0;
         }

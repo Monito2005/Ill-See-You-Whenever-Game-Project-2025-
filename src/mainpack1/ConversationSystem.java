@@ -130,6 +130,14 @@ public class ConversationSystem {
         initResponses();
     }
 
+    private void playTone(double frequency, int durationMs, float volume){
+        if(gp.se != null) gp.se.playTone(frequency, durationMs, volume);
+    }
+
+    private void playDialogueTone(){
+        playTone(520, 70, 0.16f);
+    }
+
     private void initResponses(){
         responses = new Response[]{
             new Response("Yes. I feel unseen too.", +2),
@@ -144,6 +152,7 @@ public class ConversationSystem {
         currentNPC = npc;
         currentNPCEntity = ent;
         inConversation = true;
+        playDialogueTone();
         phase = 0;
         selected = 0;
         responseIndex = 0;
@@ -232,6 +241,7 @@ public class ConversationSystem {
                 String next = nextLongLine(name);
                 if(next != null && !next.isEmpty()){
                     battleLog = next;
+                    playDialogueTone();
                 }else{
                     // finished long dialogue; proceed to normal flow
                     playingLongDialogue = false;
@@ -253,6 +263,7 @@ public class ConversationSystem {
                 phase = 1;
                 // Simple, confident introverted tone
                 battleLog = currentNPC.name + " meets your eyes in silence.";
+                playDialogueTone();
             }else if(c==KeyEvent.VK_P || c==KeyEvent.VK_ESCAPE){
                 end();
             }
