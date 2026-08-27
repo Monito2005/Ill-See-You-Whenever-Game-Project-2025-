@@ -1,0 +1,6 @@
+# Bundled runtime and generated build output
+JRE/
+bin/**/*.class
+
+# OS metadata
+.DS_Store
