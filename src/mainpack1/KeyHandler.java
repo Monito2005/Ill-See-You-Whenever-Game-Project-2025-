@@ -6,7 +6,7 @@ import java.awt.event.KeyListener;
 public class KeyHandler implements KeyListener {
 
     public GamePanel gp;
-    public boolean upPressed, downPressed, leftPressed, rightPressed, oPressed;
+    public boolean upPressed, downPressed, leftPressed, rightPressed, oPressed, shiftPressed;
 
     @Override public void keyTyped(KeyEvent e){}
 
@@ -34,6 +34,7 @@ public class KeyHandler implements KeyListener {
             if(c==KeyEvent.VK_A || c==KeyEvent.VK_LEFT)  leftPressed = true;
             if(c==KeyEvent.VK_D || c==KeyEvent.VK_RIGHT) rightPressed = true;
             if(c==KeyEvent.VK_O || c==KeyEvent.VK_ENTER) oPressed = true;
+            if(c==KeyEvent.VK_SHIFT) shiftPressed = true;
         }
     }
 
@@ -45,5 +46,6 @@ public class KeyHandler implements KeyListener {
         if(c==KeyEvent.VK_A || c==KeyEvent.VK_LEFT)  leftPressed = false;
         if(c==KeyEvent.VK_D || c==KeyEvent.VK_RIGHT) rightPressed = false;
         if(c==KeyEvent.VK_O || c==KeyEvent.VK_ENTER) oPressed = false;
+        if(c==KeyEvent.VK_SHIFT) shiftPressed = false;
     }
 }
