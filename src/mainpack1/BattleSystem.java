@@ -56,6 +56,22 @@ public class BattleSystem {
     private final Color EB_TEXT = new Color(255, 240, 240);
     private final Color EB_SUBTEXT = new Color(220, 200, 255);
     private final Color EB_SELECT = new Color(255, 255, 120);
+    private final Color COLOR_DARK_GRAY = Color.DARK_GRAY;
+    private final Color COLOR_RED = new Color(255, 120, 120);
+    private final Color COLOR_SUBTEXT_OUTLINE = new Color(180, 160, 220);
+    private final Color COLOR_CYAN = new Color(150, 220, 255);
+    
+    // Font cache
+    private Font fontBold18;
+    private Font fontBold16;
+    private Font fontBold14;
+    private Font fontBold13;
+    private Font fontBold22;
+    private Font fontPlain16;
+    private Font fontPlain14;
+    private Font fontPlain13;
+    private Font fontPlain12;
+    private Font fontPlain11;
 
     // Pre-battle convo (generic, unnamed NPC)
     private String[] preDialogue = {
@@ -157,6 +173,20 @@ public class BattleSystem {
     public BattleSystem(GamePanel gp){
         this.gp = gp;
         initActions();
+        initFonts();
+    }
+    
+    private void initFonts(){
+        fontBold18 = new Font("Arial", Font.BOLD, 18);
+        fontBold16 = new Font("Arial", Font.BOLD, 16);
+        fontBold14 = new Font("Arial", Font.BOLD, 14);
+        fontBold13 = new Font("Arial", Font.BOLD, 13);
+        fontBold22 = new Font("Arial", Font.BOLD, 22);
+        fontPlain16 = new Font("Arial", Font.PLAIN, 16);
+        fontPlain14 = new Font("Arial", Font.PLAIN, 14);
+        fontPlain13 = new Font("Arial", Font.PLAIN, 13);
+        fontPlain12 = new Font("Arial", Font.PLAIN, 12);
+        fontPlain11 = new Font("Arial", Font.PLAIN, 11);
     }
 
     private void playTone(double frequency, int durationMs, float volume){
@@ -648,8 +678,11 @@ public class BattleSystem {
                     s.z = (float)(Math.random() * 1.0f);
                     s.speed = 1.5f + (float)(Math.random() * 3f) + s.z * 2f;
                     s.size = 1 + (int)(s.z * 2);
+                    // Reuse cached colors instead of creating new ones
                     int brightness = 180 + (int)(s.z * 75);
-                    s.color = new Color(brightness, brightness, brightness);
+                    if(brightness > 240) s.color = Color.WHITE;
+                    else if(brightness > 220) s.color = new Color(brightness, brightness, brightness);
+                    else s.color = Color.GRAY;
                 }
             }
         }
@@ -685,14 +718,14 @@ public class BattleSystem {
             int boxY = gp.screenHeight/2 - boxH/2;
             drawEBPanel(g2, boxX, boxY, boxW, boxH);
 
-            g2.setFont(new Font("Arial", Font.BOLD, 18));
+            g2.setFont(fontBold18);
             g2.setColor(EB_TEXT);
             drawCentered(g2, currentNPC.name.toUpperCase(), boxX, boxY, boxW, 28);
 
-            g2.setFont(new Font("Arial", Font.PLAIN, 16));
+            g2.setFont(fontPlain16);
             g2.setColor(EB_SUBTEXT);
             g2.drawString(preDialogue[preIndex], boxX+20, boxY+70);
-            g2.setFont(new Font("Arial", Font.PLAIN, 14));
+            g2.setFont(fontPlain14);
             g2.drawString("O/Enter: next  W: respond  S: stay silent", boxX+20, boxY+110);
             return;
         }
@@ -724,13 +757,13 @@ public class BattleSystem {
                 : "NPC";
         drawRollingHP(g2, gp.screenWidth - barW - 40 + uiShakeX, 160 + uiShakeY, barW, barH, displayNpcHP, maxHP, npcLabel);
 
-        g2.setFont(new Font("Arial", Font.BOLD, 13));
+        g2.setFont(fontBold13);
         g2.setColor(EB_SELECT);
         if(combo > 0){
             g2.drawString("COMBO x" + combo + (combo % 3 == 2 ? "  (next hit crits)" : ""), 40, 218);
         }
         if(guarding){
-            g2.setColor(new Color(150, 220, 255));
+            g2.setColor(COLOR_CYAN);
             g2.drawString("BRACED: reduced damage", gp.screenWidth - 210, 218);
         }
 
@@ -740,7 +773,7 @@ public class BattleSystem {
         int logBoxX = 30 + uiShakeX;
         int logBoxY = 230 + uiShakeY;
         drawEBPanel(g2, logBoxX, logBoxY, logBoxW, logBoxH);
-        g2.setFont(new Font("Arial", Font.PLAIN, 14)); // smaller
+        g2.setFont(fontPlain14);
         g2.setColor(EB_SUBTEXT);
         int textX = logBoxX + 16;
         int textY = logBoxY + 36;
@@ -756,30 +789,30 @@ public class BattleSystem {
         drawEBPanel(g2, menuBoxX, menuBoxY, menuBoxW, menuBoxH);
 
         if(phase==0){
-            g2.setFont(new Font("Arial", Font.BOLD, 18));
+            g2.setFont(fontBold18);
             g2.setColor(EB_TEXT);
             drawCentered(g2, "! CONVERSATION BATTLE !", menuBoxX, menuBoxY, menuBoxW, 34);
-            g2.setFont(new Font("Arial", Font.PLAIN, 12));
+            g2.setFont(fontPlain12);
             g2.setColor(EB_SUBTEXT);
             g2.drawString("O/Enter: start", menuBoxX+16, menuBoxY+menuBoxH-14);
         }else if(phase==1){
-            g2.setFont(new Font("Arial", Font.BOLD, 14));
+            g2.setFont(fontBold14);
             g2.setColor(EB_SUBTEXT);
             g2.drawString("Choose your action:", menuBoxX+16, menuBoxY+26);
             drawEBMenuItem(g2, menuBoxX, menuBoxY, 0, "TALK", selected==0);
             drawEBMenuItem(g2, menuBoxX, menuBoxY, 1, "LISTEN", selected==1);
-            g2.setFont(new Font("Arial", Font.PLAIN, 11));
-            g2.setColor(new Color(180,160,220));
+            g2.setFont(fontPlain11);
+            g2.setColor(COLOR_SUBTEXT_OUTLINE);
             g2.drawString("W/S or Up/Down: move    O/Enter: select", menuBoxX+16, menuBoxY+menuBoxH-12);
         }else if(phase==2){
-            g2.setFont(new Font("Arial", Font.BOLD, 14));
+            g2.setFont(fontBold14);
             g2.setColor(EB_SUBTEXT);
             g2.drawString("What will you do?", menuBoxX+16, menuBoxY+26);
             int optionSpacing = 22;
             // guard currentActions for rendering
             Action[] renderActions = (currentActions != null) ? currentActions : new Action[]{};
             if(renderActions.length == 0){
-                g2.setColor(new Color(180,160,220));
+                g2.setColor(COLOR_SUBTEXT_OUTLINE);
                 g2.drawString("(No options available)", menuBoxX+30, menuBoxY+56);
             } else {
                 actionIndex = Math.max(0, Math.min(actionIndex, renderActions.length - 1));
@@ -795,19 +828,19 @@ public class BattleSystem {
                     }
                 }
             }
-            g2.setFont(new Font("Arial", Font.PLAIN, 11));
-            g2.setColor(new Color(180,160,220));
+            g2.setFont(fontPlain11);
+            g2.setColor(COLOR_SUBTEXT_OUTLINE);
             g2.drawString("W/S or Up/Down: move    O/Enter: confirm", menuBoxX+16, menuBoxY+menuBoxH-12);
         }else if(phase==3){
-            g2.setFont(new Font("Arial", Font.PLAIN, 13));
+            g2.setFont(fontPlain13);
             g2.setColor(EB_SUBTEXT);
             // show the composed reaction + prompt in log panel instead of cramping here
             // ...existing guidance...
-            g2.setFont(new Font("Arial", Font.PLAIN, 11));
-            g2.setColor(new Color(180,160,220));
+            g2.setFont(fontPlain11);
+            g2.setColor(COLOR_SUBTEXT_OUTLINE);
             g2.drawString("O/Enter: continue", menuBoxX+16, menuBoxY+menuBoxH-12);
         }else if(phase==4){
-            g2.setFont(new Font("Arial", Font.PLAIN, 13));
+            g2.setFont(fontPlain13);
             g2.setColor(EB_SUBTEXT);
             if(playerHP<=0){
                 g2.drawString("You ran out of resolve...", menuBoxX+20, menuBoxY+60);
@@ -816,14 +849,14 @@ public class BattleSystem {
             }else{
                 g2.drawString("The battle continues!", menuBoxX+20, menuBoxY+60);
             }
-            g2.setFont(new Font("Arial", Font.PLAIN, 11));
-            g2.setColor(new Color(180,160,220));
+            g2.setFont(fontPlain11);
+            g2.setColor(COLOR_SUBTEXT_OUTLINE);
             g2.drawString("O/Enter: continue", menuBoxX+16, menuBoxY+menuBoxH-12);
         }else if(phase==5){
-            g2.setFont(new Font("Arial", Font.BOLD, 16));
+            g2.setFont(fontBold16);
             g2.setColor(EB_TEXT);
             drawCentered(g2, "VICTORY!", menuBoxX, menuBoxY, menuBoxW, 28);
-            g2.setFont(new Font("Arial", Font.PLAIN, 12));
+            g2.setFont(fontPlain12);
             g2.setColor(EB_SUBTEXT);
             // Friendly follow-up when befriended (avoid named phrasing if unknown)
             String endNote;
@@ -833,7 +866,7 @@ public class BattleSystem {
                 endNote = "They smile warmly. 'This was good. Maybe later?'";
             }
             g2.drawString(endNote, /* menuBoxX */ 50, /* menuBoxY+80 */ 460);
-            g2.setColor(new Color(180,160,220));
+            g2.setColor(COLOR_SUBTEXT_OUTLINE);
             g2.drawString("O/Enter: details", menuBoxX+16, menuBoxY+menuBoxH-12);
         } else if(phase==6){
             int boxW = gp.screenWidth - 160;
@@ -842,12 +875,12 @@ public class BattleSystem {
             int boxY = gp.screenHeight/2 - boxH/2;
             drawEBPanel(g2, boxX, boxY, boxW, boxH);
 
-            g2.setFont(new Font("Arial", Font.BOLD, 22));
+            g2.setFont(fontBold22);
             g2.setColor(EB_TEXT);
             String winTitle = (npcHP<=0) ? "WIN" : "DEFEAT";
             drawCentered(g2, winTitle, boxX, boxY, boxW, 36);
 
-            g2.setFont(new Font("Arial", Font.PLAIN, 16));
+            g2.setFont(fontPlain16);
             g2.setColor(EB_SUBTEXT);
             if(npcHP<=0){
                 // Friendly summary on befriending
@@ -865,7 +898,7 @@ public class BattleSystem {
             String hpNote = "YOU: " + playerHP + "/" + maxHP + "   " + npcLabel + ": " + npcHP + "/" + maxHP;
             g2.drawString(hpNote, boxX + 20, boxY + 110);
 
-            g2.setFont(new Font("Arial", Font.PLAIN, 14));
+            g2.setFont(fontPlain14);
             g2.drawString("O: close", boxX + 20, boxY + 150);
         }
 
@@ -877,11 +910,11 @@ public class BattleSystem {
             int boxY = gp.screenHeight/2 - boxH/2;
             drawEBPanel(g2, boxX, boxY, boxW, boxH);
 
-            g2.setFont(new Font("Arial", Font.BOLD, 18));
+            g2.setFont(fontBold18);
             g2.setColor(EB_TEXT);
             drawCentered(g2, "TAKE A BREATH", boxX, boxY, boxW, 30);
 
-            g2.setFont(new Font("Arial", Font.PLAIN, 14));
+            g2.setFont(fontPlain14);
             g2.setColor(EB_SUBTEXT);
             String beat;
             String name = (currentNPC != null && currentNPC.name != null) ? currentNPC.name : "They";
@@ -897,8 +930,8 @@ public class BattleSystem {
             }
             g2.drawString(beat, boxX + 20, boxY + 70);
 
-            g2.setFont(new Font("Arial", Font.PLAIN, 12));
-            g2.setColor(new Color(180,160,220));
+            g2.setFont(fontPlain12);
+            g2.setColor(COLOR_SUBTEXT_OUTLINE);
             g2.drawString("O/Enter: continue", boxX + 20, boxY + boxH - 18);
             return;
         }
@@ -914,7 +947,7 @@ public class BattleSystem {
     // Replace old bar with EB style panel + rolling HP
     private void drawRollingHP(Graphics2D g2, int x, int y, int w, int h, int current, int max, String name){
         g2.setColor(EB_TEXT);
-        g2.setFont(new Font("Arial", Font.BOLD, 14));
+        g2.setFont(fontBold14);
         g2.drawString(name, x + 12, y + 18);
 
         // HP bar inside panel
@@ -923,16 +956,16 @@ public class BattleSystem {
         int innerW = w - 20;
         int innerH = 12;
 
-        g2.setColor(Color.DARK_GRAY);
+        g2.setColor(COLOR_DARK_GRAY);
         g2.fillRect(innerX, innerY, innerW, innerH);
-        g2.setColor(new Color(255, 120, 120));
+        g2.setColor(COLOR_RED);
         g2.fillRect(innerX, innerY, (int)(innerW * current / (float)max), innerH);
         g2.setColor(EB_BORDER);
         g2.drawRect(innerX, innerY, innerW, innerH);
 
         // Odometer HP text
         g2.setColor(EB_TEXT);
-        g2.setFont(new Font("Arial", Font.BOLD, 16));
+        g2.setFont(fontBold16);
         String hpText = current + " / " + max;
         g2.drawString(hpText, x + w - 12 - g2.getFontMetrics().stringWidth(hpText), y + h - 10);
     }
