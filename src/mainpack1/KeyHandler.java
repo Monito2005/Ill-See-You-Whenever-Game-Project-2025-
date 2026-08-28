@@ -23,6 +23,8 @@ public class KeyHandler implements KeyListener {
         } else if(gp.gameState == GamePanel.GameState.MENU){
             if(c==KeyEvent.VK_W || c==KeyEvent.VK_UP) gp.mainMenu.move(-1);
             else if(c==KeyEvent.VK_S || c==KeyEvent.VK_DOWN) gp.mainMenu.move(1);
+            else if(c==KeyEvent.VK_A || c==KeyEvent.VK_LEFT) gp.mainMenu.adjust(-1);
+            else if(c==KeyEvent.VK_D || c==KeyEvent.VK_RIGHT) gp.mainMenu.adjust(1);
             else if(c==KeyEvent.VK_O || c==KeyEvent.VK_ENTER) gp.mainMenu.confirm();
             return;
         } else if(gp.gameState == GamePanel.GameState.CONVO){

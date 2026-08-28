@@ -45,6 +45,9 @@ public class GamePanel extends JPanel implements Runnable {
     public entity[] npc = new entity[10];
     public EndScreen endScreen = new EndScreen(this);
 
+    public float musicVolume = 0.4f;
+    public float sfxVolume = 0.4f;
+
     private Thread gameThread;
     private int fadeAlpha = 255;
     private boolean fadingIn = true;
@@ -66,7 +69,13 @@ public class GamePanel extends JPanel implements Runnable {
         addKeyListener(keyH);
         setFocusable(true);
         keyH.gp = this;
+        applyAudioSettings();
         startGameThread();
+    }
+
+    public void applyAudioSettings(){
+        if(music != null) music.setMasterVolume(musicVolume);
+        if(se != null) se.setMasterVolume(sfxVolume);
     }
 
     public void startIntro(){ gameState = GameState.INTRO; }
@@ -74,6 +83,7 @@ public class GamePanel extends JPanel implements Runnable {
         stopMusic();
         try{
             music.setFilePath("res/sound/menu1.wav");
+            music.setMasterVolume(musicVolume);
             music.playLoop();
         }catch(Exception ignored){}
         gameState = GameState.MENU;
@@ -82,6 +92,7 @@ public class GamePanel extends JPanel implements Runnable {
         stopMusic();
         try{
             music.setFilePath("res/sound/song1.wav");
+            music.setMasterVolume(musicVolume);
             music.playLoop();
         }catch(Exception ignored){}
         gameState = GameState.PLAY;

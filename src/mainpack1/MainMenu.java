@@ -25,8 +25,12 @@ public class MainMenu {
     private final float[] burstVY = new float[20];
     private final int[] burstAlpha = new int[20];
     private final boolean[] burstActive = new boolean[20];
+
+    private enum MenuScreen { MAIN, OPTIONS }
+    private MenuScreen currentScreen = MenuScreen.MAIN;
     private int selection = 0;
-    private final String[] items = {"Start", "Exit"};
+    private final String[] mainItems = {"Start", "Options", "Exit"};
+    private final String[] optionItems = {"Music", "SFX", "Back"};
 
     private int boomFrames = 0;
     private boolean boomTriggered = false;
@@ -127,18 +131,49 @@ public class MainMenu {
     }
 
     public void move(int delta){
-        selection = (selection + delta + items.length) % items.length;
-        gp.se.playTone(360, 45, 0.18f);
+        if(currentScreen == MenuScreen.MAIN){
+            selection = (selection + delta + mainItems.length) % mainItems.length;
+        } else {
+            selection = (selection + delta + optionItems.length) % optionItems.length;
+        }
+        // no UI beep
+    }
+
+    public void adjust(int delta){
+        if(currentScreen != MenuScreen.OPTIONS) return;
+        if(selection == 0){
+            gp.musicVolume = clamp(gp.musicVolume + delta * 0.1f, 0f, 1f);
+            gp.applyAudioSettings();
+        } else if(selection == 1){
+            gp.sfxVolume = clamp(gp.sfxVolume + delta * 0.1f, 0f, 1f);
+            gp.applyAudioSettings();
+        }
     }
 
     public void confirm(){
-        gp.se.playTone(640, 90, 0.24f);
-        if(selection == 0){
-            boomTriggered = true;
-            boomFrames = 20;
+        if(currentScreen == MenuScreen.MAIN){
+            if(selection == 0){
+                boomTriggered = true;
+                boomFrames = 20;
+            } else if(selection == 1){
+                currentScreen = MenuScreen.OPTIONS;
+                selection = 0;
+            } else {
+                System.exit(0);
+            }
         } else {
-            System.exit(0);
+            if(selection == 2){
+                currentScreen = MenuScreen.MAIN;
+                selection = 1;
+            }
         }
+        // no UI beep
+    }
+
+    private float clamp(float value, float min, float max){
+        if(value < min) return min;
+        if(value > max) return max;
+        return value;
     }
 
     public void draw(Graphics2D g2){
@@ -159,15 +194,42 @@ public class MainMenu {
         g2.setColor(Color.WHITE);
         g2.drawString(title, 60, 140);
 
+        if(currentScreen == MenuScreen.MAIN){
+            drawMainMenu(g2);
+        } else {
+            drawOptionsMenu(g2);
+        }
+    }
+
+    private void drawMainMenu(Graphics2D g2){
         g2.setFont(new Font("Arial", Font.PLAIN, 30));
-        for(int i=0;i<items.length;i++){
+        for(int i=0;i<mainItems.length;i++){
             g2.setColor(i==selection?Color.YELLOW:Color.LIGHT_GRAY);
-            g2.drawString((i==selection?"> ":"  ")+items[i],120,240+i*50);
+            g2.drawString((i==selection?"> ":"  ")+mainItems[i],120,240+i*50);
         }
 
         g2.setFont(new Font("Arial", Font.PLAIN,16));
         g2.setColor(Color.GRAY);
         g2.drawString("W/S or Up/Down: Select   O/Enter: Confirm", 120, gp.screenHeight - 40);
+    }
+
+    private void drawOptionsMenu(Graphics2D g2){
+        g2.setFont(new Font("Arial", Font.PLAIN, 30));
+        g2.setColor(Color.WHITE);
+        g2.drawString("Options", 120, 220);
+
+        String musicText = "Music Volume: " + Math.round(gp.musicVolume * 100f) + "%";
+        String sfxText = "SFX Volume: " + Math.round(gp.sfxVolume * 100f) + "%";
+        String[] labels = {musicText, sfxText, "Back"};
+
+        for(int i=0;i<labels.length;i++){
+            g2.setColor(i==selection?Color.YELLOW:Color.LIGHT_GRAY);
+            g2.drawString((i==selection?"> ":"  ")+labels[i],120,280+i*50);
+        }
+
+        g2.setFont(new Font("Arial", Font.PLAIN,16));
+        g2.setColor(Color.GRAY);
+        g2.drawString("← / →: adjust   W / S: move   O/Enter: confirm", 120, gp.screenHeight - 40);
     }
 
     private void drawBackgroundParticles(Graphics2D g2){

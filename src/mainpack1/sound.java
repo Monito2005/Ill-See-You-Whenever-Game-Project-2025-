@@ -12,7 +12,8 @@ public class sound {
     Clip clip;
     URL soundURL[] = new URL[30];
     // default launch volume (0.0f = mute, 1.0f = full)
-    private float defaultVolume = 0.4f;
+    private float defaultVolume = 1.0f;
+    private float masterVolume = 1.0f;
 
     public sound(){
         try{
@@ -55,18 +56,28 @@ public class sound {
         }
     }
 
+    public void setMasterVolume(float volume){
+        if(volume < 0f) volume = 0f;
+        if(volume > 1f) volume = 1f;
+        masterVolume = volume;
+        if(clip != null){
+            setVolume(defaultVolume);
+        }
+    }
+
     // Set volume using a linear scale 0.0f (mute) -> 1.0f (full)
     public void setVolume(float volume){
         if(clip == null) return;
-        if(volume < 0f) volume = 0f;
-        if(volume > 1f) volume = 1f;
+        float effective = volume * masterVolume;
+        if(effective < 0f) effective = 0f;
+        if(effective > 1f) effective = 1f;
         try{
             if(clip.isControlSupported(FloatControl.Type.MASTER_GAIN)){
                 FloatControl gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
-                if(volume == 0f){
+                if(effective == 0f){
                     gainControl.setValue(gainControl.getMinimum());
                 } else {
-                    float dB = (float)(20.0 * Math.log10(volume));
+                    float dB = (float)(20.0 * Math.log10(effective));
                     if(dB < gainControl.getMinimum()) dB = gainControl.getMinimum();
                     if(dB > gainControl.getMaximum()) dB = gainControl.getMaximum();
                     gainControl.setValue(dB);
