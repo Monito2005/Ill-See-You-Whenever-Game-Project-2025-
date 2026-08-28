@@ -40,7 +40,10 @@ public class EndScreen {
         "--- SPECIAL THANKS ---",
         "You",
         "",
-        "Thank you for making me feel safe."
+        "Keep going, you will make everyone proud.",
+        "",
+        "--END--"
+
     };
 
     // Typewriter indices
