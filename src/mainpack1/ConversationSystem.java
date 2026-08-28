@@ -31,8 +31,6 @@ public class ConversationSystem {
     // Input/tone throttling to prevent key-hold spam hitches.
     private long nextConfirmNanos = 0L;
     private static final long CONFIRM_COOLDOWN_NANOS = 130_000_000L; // 130ms
-    private long nextToneNanos = 0L;
-    private static final long TONE_COOLDOWN_NANOS = 120_000_000L;
 
     // Hook to your battle system
     private BattleSystem battle;
@@ -150,21 +148,6 @@ public class ConversationSystem {
         initResponses();
     }
 
-    private void playTone(double frequency, int durationMs, float volume){
-        if(gp == null || gp.se == null) return;
-        long now = System.nanoTime();
-        if(now < nextToneNanos) return;
-        nextToneNanos = now + TONE_COOLDOWN_NANOS;
-
-        int safeDuration = Math.max(20, Math.min(durationMs, 35));
-        float safeVolume = Math.max(0.05f, Math.min(volume, 0.12f));
-        gp.se.playTone(frequency, safeDuration, safeVolume);
-    }
-
-    private void playDialogueTone(){
-        playTone(520, 70, 0.16f);
-    }
-
     private void initResponses(){
         responses = new Response[]{
             new Response("Yes. I feel unseen too.", +2),
@@ -179,7 +162,6 @@ public class ConversationSystem {
         currentNPC = npc;
         currentNPCEntity = ent;
         inConversation = true;
-        playDialogueTone();
         phase = 0;
         selected = 0;
         responseIndex = 0;
@@ -281,7 +263,6 @@ public class ConversationSystem {
                 String next = nextLongLine(name);
                 if(next != null && !next.isEmpty()){
                     battleLog = next;
-                    playDialogueTone();
                 }else{
                     // finished long dialogue; proceed to normal flow
                     playingLongDialogue = false;
@@ -301,9 +282,7 @@ public class ConversationSystem {
         if(phase==0){
             if(c==KeyEvent.VK_O || c==KeyEvent.VK_ENTER){
                 phase = 1;
-                // Simple, confident introverted tone
                 battleLog = currentNPC.name + " meets your eyes in silence.";
-                playDialogueTone();
             }else if(c==KeyEvent.VK_P || c==KeyEvent.VK_ESCAPE){
                 end();
             }

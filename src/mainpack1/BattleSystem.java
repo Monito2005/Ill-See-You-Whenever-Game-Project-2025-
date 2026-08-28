@@ -467,12 +467,10 @@ public class BattleSystem {
                     phase = 0; // go to intro title
                 }
             }else if(c==KeyEvent.VK_W || c==KeyEvent.VK_UP){
-                playTone(350, 45, 0.14f);
                 // respond: positive affinity
                 affinity += 2;
                 phase = 0;
             }else if(c==KeyEvent.VK_S || c==KeyEvent.VK_DOWN){
-                playTone(350, 45, 0.14f);
                 // stay silent: negative affinity
                 affinity -= 1;
                 phase = 0;
@@ -490,8 +488,8 @@ public class BattleSystem {
 
         if(phase==1){
             // clamp selection between 0 and 1
-            if(c==KeyEvent.VK_W || c==KeyEvent.VK_UP){ selected = 0; playTone(350, 45, 0.14f); }
-            else if(c==KeyEvent.VK_S || c==KeyEvent.VK_DOWN){ selected = 1; playTone(350, 45, 0.14f); }
+            if(c==KeyEvent.VK_W || c==KeyEvent.VK_UP){ selected = 0; }
+            else if(c==KeyEvent.VK_S || c==KeyEvent.VK_DOWN){ selected = 1; }
             else if(c==KeyEvent.VK_O || c==KeyEvent.VK_ENTER){
                 playTone(640, 80, 0.2f);
                 phase = 2;
@@ -508,10 +506,8 @@ public class BattleSystem {
             }
             if(c==KeyEvent.VK_W || c==KeyEvent.VK_UP){
                 actionIndex = (actionIndex - 1 + currentActions.length) % currentActions.length;
-                playTone(350, 45, 0.14f);
             }else if(c==KeyEvent.VK_S || c==KeyEvent.VK_DOWN){
                 actionIndex = (actionIndex + 1) % currentActions.length;
-                playTone(350, 45, 0.14f);
             }else if(c==KeyEvent.VK_O || c==KeyEvent.VK_ENTER){
                 playTone(640, 80, 0.2f);
                 performAction();
