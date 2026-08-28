@@ -28,6 +28,12 @@ public class ConversationSystem {
     private int transitionFrames = 0;
     private final int maxTransitionFrames = 30;
 
+    // Input/tone throttling to prevent key-hold spam hitches.
+    private long nextConfirmNanos = 0L;
+    private static final long CONFIRM_COOLDOWN_NANOS = 130_000_000L; // 130ms
+    private long nextToneNanos = 0L;
+    private static final long TONE_COOLDOWN_NANOS = 120_000_000L;
+
     // Hook to your battle system
     private BattleSystem battle;
     // Proxy mode: after transition, delegate to battle but keep this UI alive
@@ -124,6 +130,20 @@ public class ConversationSystem {
     private int longDialogueIndex = -1;
     private boolean playingLongDialogue = false;
 
+    // Cached UI resources (avoid per-frame allocations)
+    private final Color overlayColor = new Color(0,0,0,180);
+    private final Color panelFillColor = new Color(30,30,60,220);
+    private final Color panelBorderColor = new Color(150,100,200);
+    private final Color textPrimaryColor = Color.WHITE;
+    private final Color textSecondaryColor = new Color(220,200,255);
+    private final Color hintColor = new Color(180,160,220);
+    private final Color responseHeaderColor = new Color(200,180,255);
+    private final Color selectedResponseColor = Color.YELLOW;
+    private final Font titleFont = new Font("Arial", Font.BOLD, 20);
+    private final Font dialogueFont = new Font("Arial", Font.PLAIN, 18);
+    private final Font responseHeaderFont = new Font("Arial", Font.BOLD, 17);
+    private final Font hintFont = new Font("Arial", Font.PLAIN, 16);
+
     public ConversationSystem(GamePanel gp){
         this.gp = gp;
         this.battle = new BattleSystem(gp);
@@ -131,7 +151,14 @@ public class ConversationSystem {
     }
 
     private void playTone(double frequency, int durationMs, float volume){
-        if(gp.se != null) gp.se.playTone(frequency, durationMs, volume);
+        if(gp == null || gp.se == null) return;
+        long now = System.nanoTime();
+        if(now < nextToneNanos) return;
+        nextToneNanos = now + TONE_COOLDOWN_NANOS;
+
+        int safeDuration = Math.max(20, Math.min(durationMs, 35));
+        float safeVolume = Math.max(0.05f, Math.min(volume, 0.12f));
+        gp.se.playTone(frequency, safeDuration, safeVolume);
     }
 
     private void playDialogueTone(){
@@ -206,8 +233,23 @@ public class ConversationSystem {
         return "";
     }
 
+    private boolean isConfirmKey(int c){
+        return c==KeyEvent.VK_O || c==KeyEvent.VK_ENTER;
+    }
+
+    private boolean consumeConfirmPress(int c){
+        if(!isConfirmKey(c)) return false;
+        long now = System.nanoTime();
+        if(now < nextConfirmNanos) return true; // swallowed repeat
+        nextConfirmNanos = now + CONFIRM_COOLDOWN_NANOS;
+        return false;
+    }
+
     public void handleInput(KeyEvent e){
         if(!inConversation) return;
+
+        int c = e.getKeyCode();
+        if(consumeConfirmPress(c)) return;
 
         // If proxying battle, forward inputs
         if(proxyBattle){
@@ -230,8 +272,6 @@ public class ConversationSystem {
             }
             return;
         }
-
-        int c = e.getKeyCode();
 
         // Extended overworld dialogue playback (unified via nextLongLine)
         if(playingLongDialogue){
@@ -430,7 +470,7 @@ public class ConversationSystem {
         }
 
         // Overworld-style dialog UI
-        g2.setColor(new Color(0,0,0,180));
+        g2.setColor(overlayColor);
         g2.fillRect(0,0,gp.screenWidth,gp.screenHeight);
 
         // NPC sprite (smaller in overworld convo)
@@ -448,19 +488,19 @@ public class ConversationSystem {
         int boxX = 50;
         int boxY = gp.screenHeight - boxH - 32;
 
-        g2.setColor(new Color(30,30,60,220));
+        g2.setColor(panelFillColor);
         g2.fillRoundRect(boxX, boxY, boxW, boxH, 16, 16);
-        g2.setColor(new Color(150,100,200));
+        g2.setColor(panelBorderColor);
         g2.drawRoundRect(boxX, boxY, boxW, boxH, 16, 16);
 
         // Title
-        g2.setFont(new Font("Arial", Font.BOLD, 20));
-        g2.setColor(Color.WHITE);
+        g2.setFont(titleFont);
+        g2.setColor(textPrimaryColor);
         g2.drawString(currentNPC.name, boxX+20, boxY+32);
 
         // Wrapped dialogue
-        g2.setFont(new Font("Arial", Font.PLAIN, 18));
-        g2.setColor(new Color(220,200,255));
+        g2.setFont(dialogueFont);
+        g2.setColor(textSecondaryColor);
         int textAreaX = boxX + 20;
         int textAreaY = boxY + 62;
         int textAreaW = boxW - 40;
@@ -477,8 +517,8 @@ public class ConversationSystem {
                 }else if(phase==1){
                     drawBottomHint(g2, boxX, boxY, boxW, boxH, "O: continue", null);
                 }else if(phase==2){
-                g2.setFont(new Font("Arial", Font.BOLD, 17));
-                g2.setColor(new Color(200,180,255));
+                g2.setFont(responseHeaderFont);
+                g2.setColor(responseHeaderColor);
                 g2.drawString("How do you respond?", boxX+20, boxY + 104);
 
                 // Bounded, scrollable response list
@@ -492,21 +532,21 @@ public class ConversationSystem {
 
                 // Scroll indicators
                 if(firstIndex > 0){
-                    g2.setColor(new Color(180,160,220));
+                    g2.setColor(hintColor);
                     g2.drawString("▲", boxX + boxW - 26, startY - 6);
                 }
                 if(lastIndex < responses.length){
-                    g2.setColor(new Color(180,160,220));
+                    g2.setColor(hintColor);
                     g2.drawString("▼", boxX + boxW - 26, startY + itemSpacing * (maxVisible) - 6);
                 }
 
                 for(int i = firstIndex; i < lastIndex; i++){
                     int y = startY + (i - firstIndex) * itemSpacing;
                     if(i==responseIndex){
-                        g2.setColor(Color.YELLOW);
+                        g2.setColor(selectedResponseColor);
                         drawWrapped(g2, "> " + responses[i].text, boxX+30, y, boxW - 50, itemSpacing - 4, 1);
                     }else{
-                        g2.setColor(new Color(180,160,220));
+                        g2.setColor(hintColor);
                         drawWrapped(g2, responses[i].text, boxX+50, y, boxW - 70, itemSpacing - 4, 1);
                     }
                 }
@@ -531,8 +571,8 @@ public class ConversationSystem {
 
     private void drawBottomHint(Graphics2D g2, int boxX, int boxY, int boxW, int boxH, String leftText, String rightText){
         int y = boxY + boxH - 18;
-        g2.setFont(new Font("Arial", Font.PLAIN, 16));
-        g2.setColor(new Color(180,160,220));
+        g2.setFont(hintFont);
+        g2.setColor(hintColor);
 
         if(leftText != null && !leftText.isEmpty()){
             g2.drawString(leftText, boxX + 20, y);
