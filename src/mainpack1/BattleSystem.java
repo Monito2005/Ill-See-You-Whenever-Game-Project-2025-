@@ -22,6 +22,7 @@ public class BattleSystem {
     private NPC currentNPC;
     // accept any NPC entity (Humberto or Andrew)
     private entity currentNPCEntity;
+    private BufferedImage cachedBattleSprite; // Cache sprite to avoid repeated loading
 
     private int phase = 0; // 0: intro, 1: player menu, 2: choose action, 3: NPC turn, 4: result, 5: end
     private int selected = 0;
@@ -412,6 +413,9 @@ public class BattleSystem {
         // Reset pacing state
         totalTurns = 0;
         inIntermission = false;
+        
+        // Cache the sprite ONCE at battle start (instead of loading every frame)
+        cachedBattleSprite = getBattleSprite(ent, npc);
 
         // Play battle music
         gp.stopMusic();
@@ -733,7 +737,7 @@ public class BattleSystem {
         // NPC sprite during battle
         int spriteShakeX = (npcShakeFrames > 0) ? (int)(Math.random()*shakeMagnitude - shakeMagnitude/2) : 0;
         int spriteShakeY = (npcShakeFrames > 0) ? (int)(Math.random()*shakeMagnitude - shakeMagnitude/2) : 0;
-        BufferedImage npcImg = getBattleSprite(currentNPCEntity, currentNPC);
+        BufferedImage npcImg = cachedBattleSprite; // Use cached sprite instead of loading every frame
         if(npcImg != null){
             int spriteW = gp.tileSize * 4;
             int spriteH = gp.tileSize * 4;
@@ -970,11 +974,13 @@ public class BattleSystem {
         g2.drawString(hpText, x + w - 12 - g2.getFontMetrics().stringWidth(hpText), y + h - 10);
     }
 
+    private final java.awt.BasicStroke panelStroke = new java.awt.BasicStroke(3);
+    
     private void drawEBPanel(Graphics2D g2, int x, int y, int w, int h){
         g2.setColor(EB_PANEL);
         g2.fillRect(x, y, w, h);
         g2.setColor(EB_BORDER);
-        g2.setStroke(new java.awt.BasicStroke(3));
+        g2.setStroke(panelStroke);
         g2.drawRect(x, y, w, h);
     }
 
@@ -995,26 +1001,46 @@ public class BattleSystem {
         }
     }
 
-    // Wrap helper for battleLog
+    // Wrap helper for battleLog - optimized to reduce allocations
     private void drawWrappedText(Graphics2D g2, String text, int x, int y, int maxWidth, int lineHeight, int maxLines){
         if(text == null || text.isEmpty()) return;
-        String[] words = text.split("\\s+");
-        StringBuilder line = new StringBuilder();
+        String[] words = text.split(" ");
         int lines = 0;
-        for(String w : words){
-            String candidate = (line.length()==0 ? w : line + " " + w);
-            if(g2.getFontMetrics().stringWidth(candidate) <= maxWidth){
-                line = new StringBuilder(candidate);
-            }else{
-                g2.drawString(line.toString(), x, y + lines * lineHeight);
+        int currentLineWidth = 0;
+        int lineStart = 0;
+        
+        for(int i = 0; i < words.length; i++){
+            String word = words[i];
+            int wordWidth = g2.getFontMetrics().stringWidth(word);
+            int spaceWidth = i > lineStart ? g2.getFontMetrics().stringWidth(" ") : 0;
+            
+            if(currentLineWidth + spaceWidth + wordWidth <= maxWidth){
+                currentLineWidth += spaceWidth + wordWidth;
+            } else {
+                // Draw current line
+                if(lineStart < i){
+                    drawWords(g2, words, lineStart, i, x, y + lines * lineHeight);
+                }
                 lines++;
                 if(lines >= maxLines) return;
-                line = new StringBuilder(w);
+                currentLineWidth = wordWidth;
+                lineStart = i;
             }
         }
-        if(line.length() > 0 && lines < maxLines){
-            g2.drawString(line.toString(), x, y + lines * lineHeight);
+        
+        // Draw remaining words
+        if(lineStart < words.length){
+            drawWords(g2, words, lineStart, words.length, x, y + lines * lineHeight);
         }
+    }
+    
+    private void drawWords(Graphics2D g2, String[] words, int start, int end, int x, int y){
+        StringBuilder sb = new StringBuilder();
+        for(int i = start; i < end; i++){
+            if(i > start) sb.append(" ");
+            sb.append(words[i]);
+        }
+        g2.drawString(sb.toString(), x, y);
     }
 
     // Try to get a valid battle sprite image from the entity; fallback to name-based assets.
@@ -1096,6 +1122,7 @@ public class BattleSystem {
         inBattle = false;
         currentNPC = null;
         currentNPCEntity = null;
+        cachedBattleSprite = null; // Clear cached sprite
         gp.gameState = GamePanel.GameState.PLAY;
         gp.stopMusic();
         try{
