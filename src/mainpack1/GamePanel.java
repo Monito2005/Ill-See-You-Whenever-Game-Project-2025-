@@ -184,6 +184,13 @@ public class GamePanel extends JPanel implements Runnable {
                 repaint();
                 delta--;
             }
+            // Prevent busy-wait CPU spikes and keep pacing stable.
+            // This helps maintain smoother frame times on laptops.
+            try{
+                Thread.sleep(1);
+            }catch(InterruptedException ignored){
+                Thread.currentThread().interrupt();
+            }
         }
     }
 

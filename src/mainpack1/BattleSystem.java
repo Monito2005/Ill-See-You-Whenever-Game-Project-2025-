@@ -170,6 +170,9 @@ public class BattleSystem {
     private final int intermissionEvery = 6;   // story beat after every 6 turns
     private boolean inIntermission = false;
     private final float damagePacingFactor = 1.15f;
+    // Procedural tone generation is expensive; throttle to avoid input hitches.
+    private long nextToneNanos = 0L;
+    private static final long TONE_COOLDOWN_NANOS = 120_000_000L;
 
     public BattleSystem(GamePanel gp){
         this.gp = gp;
@@ -191,7 +194,15 @@ public class BattleSystem {
     }
 
     private void playTone(double frequency, int durationMs, float volume){
-        if(gp.se != null) gp.se.playTone(frequency, durationMs, volume);
+        if(gp == null || gp.se == null) return;
+        long now = System.nanoTime();
+        if(now < nextToneNanos) return;
+        nextToneNanos = now + TONE_COOLDOWN_NANOS;
+
+        // Keep synthesized tones very short/quiet to reduce clip work.
+        int safeDuration = Math.max(20, Math.min(durationMs, 35));
+        float safeVolume = Math.max(0.05f, Math.min(volume, 0.12f));
+        gp.se.playTone(frequency, safeDuration, safeVolume);
     }
 
     private void initActions(){
@@ -602,12 +613,6 @@ public class BattleSystem {
         if(listening){
             playerHP = Math.min(maxHP, playerHP + 6);
         }
-
-        // NPC reaction line right after player selects
-        // Shown in phase 3 with contextual follow-up
-        String reactionLine = a.npcReaction;
-        String promptLine = a.followUpPrompt != null ? a.followUpPrompt :
-                (roundIndex < npcQuestions.length ? npcQuestions[roundIndex] : "He watches you carefully.");
 
         if(a.followUps != null && a.followUps.length > 0){
             currentActions = a.followUps;
